@@ -4,7 +4,7 @@
 Plugin name: Activity Sparks
 Plugin URI: http://www.pantsonhead.com/wordpress/activitysparks/
 Description: A widget to display a customizable sparkline graph of post and/or comment activity.
-Version: 0.01
+Version: 0.2
 Author: Greg Jackson
 Author URI: http://www.pantsonhead.com
 
@@ -37,11 +37,21 @@ class activitysparks extends WP_Widget {
 	
 	function widget($args, $instance) {
 		extract($args);
-		
 		$title = apply_filters('widget_title', empty($instance['title']) ? '' : $instance['title']);
-		
-		$url = $this->build_url($instance);
-		
+		$cachetime = intval($instance['cachetime']);
+
+		if($cachetime){
+			$url = $instance['url'];
+			if($url=='' OR (time()-intval($instance['url_time']))>$cachetime) {
+				$settings = get_option($this->option_name);
+				$url = $settings[$this->number]['url'] = $this->build_url($instance);
+				$settings[$this->number]['url_time']=time();
+				update_option( $this->option_name, $settings );
+			}
+		} else {
+			// no caching - just build it
+			$url = $this->build_url($instance);
+		}
 		// output
 		echo $before_widget;
 		if($title)
@@ -162,7 +172,8 @@ class activitysparks extends WP_Widget {
 		$instance['bkgrnd'] = strtoupper($new_instance['bkgrnd']);
 		$instance['posts_color'] = strtoupper($new_instance['posts_color']);
 		$instance['comments_color'] = strtoupper($new_instance['comments_color']);
-		
+		$instance['cachetime'] = intval($new_instance['cachetime']);
+		$instance['url'] = ''; // flush the cache
 	  return $instance;
 	}
 	
@@ -190,23 +201,33 @@ class activitysparks extends WP_Widget {
 		$bkgrnd = htmlspecialchars($instance['bkgrnd']);
 		$posts_color = htmlspecialchars($instance['posts_color']);
 		$comments_color = htmlspecialchars($instance['comments_color']);
+		$cachetime = intval($instance['cachetime']);
 
 		${'dataset_'.$dataset} = 'SELECTED';
+		${'cachetime_'.$cachetime} = 'SELECTED';
 		${'period_'.$period} = 'SELECTED';
 		
   
 		echo '<p>
-			<label for="'.$this->get_field_name('title').'">Title: </label><br />
+			<label for="'.$this->get_field_name('title').'">Title: </label> 
 			<input type="text" id="'.$this->get_field_id('title').'" name="'.$this->get_field_name('title').'" value="'.$title.'"/>
 			</p>
 			<p>
-			<label for="'.$this->get_field_name('dataset').'">Display: </label><br />
-			<select id="'.$this->get_field_id('dataset').'" name="'.$this->get_field_name('dataset').'">
-			<option value="posts" '.$dataset_posts.'>Posts</option>
-			<option value="comments" '.$dataset_comments.'>Comments</option>
-			<option value="both" '.$dataset_both.'>Posts and Comments</option>
-			<option value="legend" '.$dataset_legend.'>Posts and Comments with legend</option>
-			</select>
+				<label for="'.$this->get_field_name('dataset').'">Display Style: </label><br />
+				<select id="'.$this->get_field_id('dataset').'" name="'.$this->get_field_name('dataset').'">
+					<option value="posts" '.$dataset_posts.'>Posts</option>
+					<option value="comments" '.$dataset_comments.'>Comments</option>
+					<option value="both" '.$dataset_both.'>Posts + Comments</option>
+					<option value="legend" '.$dataset_legend.'>Posts + Comments with legend</option>
+				</select>
+			</p>
+			<p>
+				<label for="'.$this->get_field_name('cachetime').'">Caching: </label> 
+				<select id="'.$this->get_field_id('cachetime').'" name="'.$this->get_field_name('cachetime').'">
+					<option value="0" '.$cachetime_0.'>None</option>
+					<option value="300" '.$cachetime_300.'>Short (5 mins) </option>
+					<option value="3600" '.$cachetime_3600.'>Long (1 hour) </option>
+				</select>
 			</p>
 			<table cellpadding="0" cellspacing="0" width="100%">
 			<tr><td width="50%">
@@ -256,7 +277,7 @@ class activitysparks extends WP_Widget {
 			<input type="text" id="'.$this->get_field_id('bkgrnd').'" name="'.$this->get_field_name('bkgrnd').'" value="'.$bkgrnd.'" style="width:80px" /> e.g. FFFFAA or NONE
 			</p>
 			<p>
-			<label for="'.$this->get_field_name('chma').'">Graph Margin (px): </label><br />
+			<label for="'.$this->get_field_name('chma').'">Graph Margin (px): </label> 
 			<input type="text" id="'.$this->get_field_id('chma').'" name="'.$this->get_field_name('chma').'" value="'.$chma.'" style="width:80px" />
 			</p>
 			';
