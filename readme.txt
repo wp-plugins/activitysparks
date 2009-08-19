@@ -25,7 +25,7 @@ Activity Sparks is a highly customizable widget to display a "sparkline" style g
 
 == Frequently Asked Questions ==
 
-= How to use it if I don't want to call a widget in the sidebar? =
+= Can I use it if I don't want to call a widget in the sidebar? =
 
 Basic template tag support was added in v0.3. The following code checks for plugin activation and renders with the default settings.
 
