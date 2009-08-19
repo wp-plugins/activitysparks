@@ -29,9 +29,9 @@ Activity Sparks is a highly customizable widget to display a "sparkline" style g
 
 Basic template tag support was added in v0.3. The following code checks for plugin activation and renders with teh default settings.
 
-<?php if(function_exists('activitysparks')) {
-	activitysparks();	
-} ?>
+		<?php if(function_exists('activitysparks')) {
+			activitysparks();	
+		} ?>
 
 To change the default settings you must pass an array of the parameters you wish to alter. These are the available parameters and valid values
 
@@ -47,9 +47,9 @@ To change the default settings you must pass an array of the parameters you wish
 
 An example of how to implement this is as follows:
 
-<?php if(function_exists('activitysparks')) {
-	activitysparks(array('dataset'=>'legend','width_px'=>480,bkgrnd=>'NONE'));	
-} ?>
+		<?php if(function_exists('activitysparks')) {
+			activitysparks(array('dataset'=>'legend','width_px'=>480,bkgrnd=>'NONE'));	
+		} ?>
 
 Caching is not available for the template tag implementation.
 
