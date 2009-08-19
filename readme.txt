@@ -27,7 +27,7 @@ Activity Sparks is a highly customizable widget to display a "sparkline" style g
 
 = How to use it if I don't want to call a widget in the sidebar? =
 
-Basic template tag support was added in v0.3. The following code checks for plugin activation and renders with teh default settings.
+Basic template tag support was added in v0.3. The following code checks for plugin activation and renders with the default settings.
 
 		<?php if(function_exists('activitysparks')) {
 			activitysparks();	
@@ -45,7 +45,7 @@ To change the default settings you must pass an array of the parameters you wish
 * posts_color = 6 character hex value (e.g 4D89F9)
 * comments_color = 6 character hex value (e.g FF9900)
 
-An example of how to implement this is as follows:
+An example of how to implement parameters is as follows:
 
 		<?php if(function_exists('activitysparks')) {
 			activitysparks(array('dataset'=>'legend','width_px'=>480,bkgrnd=>'NONE'));	
