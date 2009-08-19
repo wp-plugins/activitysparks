@@ -23,13 +23,47 @@ Activity Sparks is a highly customizable widget to display a "sparkline" style g
 
 1. Example implementation (3 instances)
 
+== Frequently Asked Questions ==
+
+= How to use it if I don't want to call a widget in the sidebar? =
+
+Basic template tag support was added in v0.3. The following code checks for plugin activation and renders with teh default settings.
+
+<?php if(function_exists('activitysparks')) {
+	activitysparks();	
+} ?>
+
+To change the default settings you must pass an array of the parameters you wish to alter. These are the available parameters and valid values
+
+* dataset = 'posts', 'comments', 'both' or 'legend'
+* width_px = positive integer
+* height_px = positive integer
+* period = 1, 7, 14, 30, etc. (number of days to group by)
+* ticks = positive integer (number of periods to display)
+* chma = 0 or positive integer (chart margin px)
+* bkgrnd = 6 character hex value (e.g. FFFFFF) or 'NONE' for transparency
+* posts_color = 6 character hex value (e.g 4D89F9)
+* comments_color = 6 character hex value (e.g FF9900)
+
+An example of how to implement this is as follows:
+
+<?php if(function_exists('activitysparks')) {
+	activitysparks(array('dataset'=>'legend','width_px'=>480,bkgrnd=>'NONE'));	
+} ?>
+
+Caching is not available for the template tag implementation.
 
 == Changelog ==
 
-= v0.2 2009/08/17 =
+= v0.3 2009-08-19 =
+
+* Added color swatches to widget UI
+* Added basic template tag support
+
+= v0.2 2009-08-17 =
 
 * Added optional caching (90% faster)
 
-= v0.1 2009/08/14 =
+= v0.1 2009-08-14 =
 
 * Initial release

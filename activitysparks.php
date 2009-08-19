@@ -4,7 +4,7 @@
 Plugin name: Activity Sparks
 Plugin URI: http://www.pantsonhead.com/wordpress/activitysparks/
 Description: A widget to display a customizable sparkline graph of post and/or comment activity.
-Version: 0.2
+Version: 0.2.1
 Author: Greg Jackson
 Author URI: http://www.pantsonhead.com
 
@@ -208,7 +208,9 @@ class activitysparks extends WP_Widget {
 		${'period_'.$period} = 'SELECTED';
 		
   
-		echo '<p>
+		echo '
+		<style type="text/css">.color_swatch {width:12px;height:12px;}</style>
+		<p>
 			<label for="'.$this->get_field_name('title').'">Title: </label> 
 			<input type="text" id="'.$this->get_field_id('title').'" name="'.$this->get_field_name('title').'" value="'.$title.'"/>
 			</p>
@@ -263,18 +265,21 @@ class activitysparks extends WP_Widget {
 			<tr><td>
 				<p>
 				<label for="'.$this->get_field_name('posts_color').'">Posts: </label><br />
-				<input type="text" id="'.$this->get_field_id('posts_color').'" name="'.$this->get_field_name('posts_color').'" value="'.$posts_color.'"/ style="width:80px" />
+				<input type="text" id="'.$this->get_field_id('posts_color').'" name="'.$this->get_field_name('posts_color').'" value="'.$posts_color.'" style="width:60px" />
+				<input id="swatch1" class="color_swatch" disabled="disabled" style="background:#'.$posts_color.'">
 				</p>
 			</td><td>
 				<p>
 				<label for="'.$this->get_field_name('comments_color').'">Comments: </label><br />
-				<input type="text" id="'.$this->get_field_id('comments_color').'" name="'.$this->get_field_name('comments_color').'" value="'.$comments_color.'" style="width:80px" />
+				<input type="text" id="'.$this->get_field_id('comments_color').'" name="'.$this->get_field_name('comments_color').'" value="'.$comments_color.'" style="width:60px" />
+				<input id="swatch2" class="color_swatch" disabled="disabled" style="background:#'.$comments_color.'" alt="bob">
 				</p>
 			</td></tr>
 			</table>
 			<p>
 			<label for="'.$this->get_field_name('bkgrnd').'">Background: </label><br />
-			<input type="text" id="'.$this->get_field_id('bkgrnd').'" name="'.$this->get_field_name('bkgrnd').'" value="'.$bkgrnd.'" style="width:80px" /> e.g. FFFFAA or NONE
+			<input type="text" id="'.$this->get_field_id('bkgrnd').'" name="'.$this->get_field_name('bkgrnd').'" value="'.$bkgrnd.'" style="width:60px" />
+			<input id="swatch3" class="color_swatch" disabled="disabled" style="background:#'.$bkgrnd.'"> e.g. FFFFAA or NONE
 			</p>
 			<p>
 			<label for="'.$this->get_field_name('chma').'">Graph Margin (px): </label> 
@@ -287,6 +292,12 @@ class activitysparks extends WP_Widget {
 
 function activitysparks_init() {
   register_widget('activitysparks');
+}
+
+function activitysparks($settings = array()) {
+	$activitysparks = new activitysparks;
+	$url = $activitysparks->build_url($settings);
+	echo '<img src="'.$url.'">';
 }
 
 add_action('widgets_init', 'activitysparks_init');
