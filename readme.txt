@@ -55,6 +55,11 @@ Caching is not available for the template tag implementation.
 
 == Changelog ==
 
+= v0.4 2009-09-02 =
+
+* Added optional category observance
+* Fixed ticks bug
+
 = v0.3 2009-08-19 =
 
 * Added color swatches to widget UI

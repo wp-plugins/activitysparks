@@ -4,7 +4,7 @@
 Plugin name: Activity Sparks
 Plugin URI: http://www.pantsonhead.com/wordpress/activitysparks/
 Description: A widget to display a customizable sparkline graph of post and/or comment activity.
-Version: 0.3
+Version: 0.4
 Author: Greg Jackson
 Author URI: http://www.pantsonhead.com
 
@@ -37,20 +37,32 @@ class activitysparks extends WP_Widget {
 	
 	function widget($args, $instance) {
 		extract($args);
+		
+		$category_id=0;
+		
+		if(is_category() and $instance['chart_category']){
+			$category_ids = get_all_category_ids(); 
+			foreach($category_ids as $cat_id) {
+				if($category_id==0) 
+					if(is_category($cat_id))
+						$category_id = $cat_id;
+			}
+		}
+
 		$title = apply_filters('widget_title', empty($instance['title']) ? '' : $instance['title']);
-		$cachetime = intval($instance['cachetime']);
+		$cachetime = intval($instance['cachetime'][$category_id]);
 
 		if($cachetime){
-			$url = $instance['url'];
-			if($url=='' OR (time()-intval($instance['url_time']))>$cachetime) {
+			$url = $instance['url'][$category_id];
+			if($url=='' OR (time()-intval($instance['url_time'][$category_id]))>$cachetime) {
 				$settings = get_option($this->option_name);
-				$url = $settings[$this->number]['url'] = $this->build_url($instance);
-				$settings[$this->number]['url_time']=time();
+				$url = $settings[$this->number]['url'][$category_id] = $this->build_url($instance);
+				$settings[$this->number]['url_time'][$category_id]=time();
 				update_option( $this->option_name, $settings );
 			}
 		} else {
 			// no caching - just build it
-			$url = $this->build_url($instance);
+			$url = $this->build_url($instance,$category_id);
 		}
 		// output
 		echo $before_widget;
@@ -61,7 +73,7 @@ class activitysparks extends WP_Widget {
 	
 	}
 	
-	function build_url($instance) {
+	function build_url($instance,$category_id=0) {
 		$dataset = empty($instance['dataset']) ? 'posts' : $instance['dataset'];
 		$width_px = empty($instance['width_px']) ? 250 : $instance['width_px'];
 		$height_px = empty($instance['height_px']) ? 30 : $instance['height_px'];
@@ -74,9 +86,9 @@ class activitysparks extends WP_Widget {
 		
 		// load the data
 		if($dataset != 'comments')
-			$posts_data = $this->get_datapoints('posts',$period);
+			$posts_data = $this->get_datapoints('posts',$period,$ticks,$category_id);
 		if($dataset != 'posts')
-			$comments_data = $this->get_datapoints('comments',$period);
+			$comments_data = $this->get_datapoints('comments',$period,$ticks,$category_id);
 			
 		// build the URL for Google Chart API
 		$url = 'http://chart.apis.google.com/chart?chs='.$width_px.'x'.$height_px.'&cht=ls';
@@ -117,23 +129,31 @@ class activitysparks extends WP_Widget {
 	
 	
 	
-	function get_datapoints($type='posts', $period=30, $ticks=100) {
+	function get_datapoints($type='posts', $period=30, $ticks=100,$category_id=0) {
 		global $wpdb;
 		$wpdb->show_errors();
 		$now_tick = $wpdb->get_row("SELECT ROUND((TO_DAYS(now()))/$period) tick")->tick;
 
+		if($category_id) {
+			$category_posts_join = " INNER JOIN {$wpdb->prefix}term_relationships ON {$wpdb->prefix}posts.ID = {$wpdb->prefix}term_relationships.object_id
+				INNER JOIN {$wpdb->prefix}term_taxonomy ON {$wpdb->prefix}term_relationships.term_taxonomy_id = {$wpdb->prefix}term_taxonomy.term_taxonomy_id ";
+			$category_comments_join = " INNER JOIN {$wpdb->prefix}term_relationships ON {$wpdb->prefix}comments.comment_post_ID = {$wpdb->prefix}term_relationships.object_id
+				INNER JOIN {$wpdb->prefix}term_taxonomy ON {$wpdb->prefix}term_relationships.term_taxonomy_id = {$wpdb->prefix}term_taxonomy.term_taxonomy_id ";
+			$category_where = " AND {$wpdb->prefix}term_taxonomy.taxonomy = 'category' AND {$wpdb->prefix}term_taxonomy.term_id = $category_id ";	
+		}
+		
 		if($type=='posts') {
 			$sql = "SELECT ROUND((TO_DAYS(post_date))/$period) ticker, count(*) value 
-				FROM {$wpdb->prefix}posts
-				WHERE post_status='publish'
+				FROM {$wpdb->prefix}posts $category_posts_join
+				WHERE post_status='publish' $category_where
 					AND post_date > date_sub(now(), interval ($ticks*$period) day)
 					GROUP BY ticker 
 					ORDER BY ticker";
 		}
 		if($type=='comments') {
 			$sql = "SELECT ROUND((TO_DAYS(comment_date))/$period) ticker, count(*) value 
-				FROM {$wpdb->prefix}comments
-				WHERE comment_approved='1'
+				FROM {$wpdb->prefix}comments $category_comments_join
+				WHERE comment_approved='1' $category_where
 					AND comment_date > date_sub(now(), interval ($ticks*$period) day)
 					GROUP BY ticker 
 					ORDER BY ticker";
@@ -174,6 +194,7 @@ class activitysparks extends WP_Widget {
 		$instance['comments_color'] = strtoupper($new_instance['comments_color']);
 		$instance['cachetime'] = intval($new_instance['cachetime']);
 		$instance['url'] = ''; // flush the cache
+		$instance['chart_category'] = intval($new_instance['chart_category']);
 	  return $instance;
 	}
 	
@@ -202,11 +223,12 @@ class activitysparks extends WP_Widget {
 		$posts_color = htmlspecialchars($instance['posts_color']);
 		$comments_color = htmlspecialchars($instance['comments_color']);
 		$cachetime = intval($instance['cachetime']);
+		$chart_category = intval($instance['chart_category']);
 
 		${'dataset_'.$dataset} = 'SELECTED';
 		${'cachetime_'.$cachetime} = 'SELECTED';
 		${'period_'.$period} = 'SELECTED';
-		
+		$chart_category_checked = $chart_category ? 'checked': '';
   
 		echo '
 		<style type="text/css">.color_swatch {width:12px;height:12px;}</style>
@@ -222,6 +244,10 @@ class activitysparks extends WP_Widget {
 					<option value="both" '.$dataset_both.'>Posts + Comments</option>
 					<option value="legend" '.$dataset_legend.'>Posts + Comments with legend</option>
 				</select>
+			</p>
+			<p>
+				<input id="'.$this->get_field_id('chart_category').'" name="'.$this->get_field_name('chart_category').'" type="checkbox" value="1" '.$chart_category_checked.'> 
+				<label for="'.$this->get_field_name('chart_category').'">Show activity per category page.</label>
 			</p>
 			<p>
 				<label for="'.$this->get_field_name('cachetime').'">Caching: </label> 
