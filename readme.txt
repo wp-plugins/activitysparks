@@ -55,6 +55,10 @@ Caching is not available for the template tag implementation.
 
 == Changelog ==
 
+= v0.4.2 2012-10-05 =
+
+* Fixed issues highlighted by debugging mode.
+
 = v0.4.1 2012-09-18 =
 
 * Tested up to: 3.2.1 

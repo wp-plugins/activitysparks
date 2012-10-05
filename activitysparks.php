@@ -4,7 +4,7 @@
 Plugin name: Activity Sparks
 Plugin URI: http://www.pantsonhead.com/wordpress/activitysparks/
 Description: A widget to display a customizable sparkline graph of post and/or comment activity.
-Version: 0.4.1
+Version: 0.4.2
 Author: Greg Jackson
 Author URI: http://www.pantsonhead.com
 
@@ -134,12 +134,15 @@ class activitysparks extends WP_Widget {
 		$wpdb->show_errors();
 		$now_tick = $wpdb->get_row("SELECT ROUND((TO_DAYS(now()))/$period) tick")->tick;
 
+		$category_posts_join = $category_comments_join = $category_where = '';
 		if($category_id) {
 			$category_posts_join = " INNER JOIN {$wpdb->prefix}term_relationships ON {$wpdb->prefix}posts.ID = {$wpdb->prefix}term_relationships.object_id
 				INNER JOIN {$wpdb->prefix}term_taxonomy ON {$wpdb->prefix}term_relationships.term_taxonomy_id = {$wpdb->prefix}term_taxonomy.term_taxonomy_id ";
 			$category_comments_join = " INNER JOIN {$wpdb->prefix}term_relationships ON {$wpdb->prefix}comments.comment_post_ID = {$wpdb->prefix}term_relationships.object_id
 				INNER JOIN {$wpdb->prefix}term_taxonomy ON {$wpdb->prefix}term_relationships.term_taxonomy_id = {$wpdb->prefix}term_taxonomy.term_taxonomy_id ";
 			$category_where = " AND {$wpdb->prefix}term_taxonomy.taxonomy = 'category' AND {$wpdb->prefix}term_taxonomy.term_id = $category_id ";	
+		} else {
+			$category_posts_join = $category_comments_join = $category_where = '';
 		}
 		
 		if($type=='posts') {
@@ -173,9 +176,10 @@ class activitysparks extends WP_Widget {
 
 		// "normalize" data and build CSV 
 		if($maxval<4) $maxval=4;
+		$data_points = '';
 		for($i=$now_tick-$ticks;$i<=$now_tick;$i++){
 			$value = $maxval ? intval(($data[$i]/$maxval)*100) : 0;
-			$data_points .= (isset($data_points)) ?  ','.$value : $value;
+			$data_points .= (!empty($data_points)) ?  ','.$value : $value;
 		}
 		return $data_points;
 	}
