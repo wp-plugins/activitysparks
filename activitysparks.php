@@ -4,7 +4,7 @@
 Plugin name: Activity Sparks
 Plugin URI: http://www.pantsonhead.com/wordpress/activitysparks/
 Description: A widget to display a customizable sparkline graph of post and/or comment activity.
-Version: 0.4.2
+Version: 0.5
 Author: Greg Jackson
 Author URI: http://www.pantsonhead.com
 
@@ -50,15 +50,14 @@ class activitysparks extends WP_Widget {
 		}
 
 		$title = apply_filters('widget_title', empty($instance['title']) ? '' : $instance['title']);
-		$cachetime = intval($instance['cachetime'][$category_id]);
+		$cachetime = intval($instance['cachetime']);
 
 		if($cachetime){
-			$url = $instance['url'][$category_id];
-			if($url=='' OR (time()-intval($instance['url_time'][$category_id]))>$cachetime) {
-				$settings = get_option($this->option_name);
-				$url = $settings[$this->number]['url'][$category_id] = $this->build_url($instance);
-				$settings[$this->number]['url_time'][$category_id]=time();
-				update_option( $this->option_name, $settings );
+			$cachekey = md5($args['widget_id'].$category_id);
+			$url = get_transient($cachekey);
+			if($url===FALSE){
+				$url = $this->build_url($instance,$category_id);
+				set_transient($cachekey,$url,$cachetime);
 			}
 		} else {
 			// no caching - just build it
@@ -70,7 +69,6 @@ class activitysparks extends WP_Widget {
 			echo $before_title.$title.$after_title;
 		echo '<img src="'.$url.'">';
 		echo $after_widget;
-	
 	}
 	
 	function build_url($instance,$category_id=0) {
@@ -134,7 +132,6 @@ class activitysparks extends WP_Widget {
 		$wpdb->show_errors();
 		$now_tick = $wpdb->get_row("SELECT ROUND((TO_DAYS(now()))/$period) tick")->tick;
 
-		$category_posts_join = $category_comments_join = $category_where = '';
 		if($category_id) {
 			$category_posts_join = " INNER JOIN {$wpdb->prefix}term_relationships ON {$wpdb->prefix}posts.ID = {$wpdb->prefix}term_relationships.object_id
 				INNER JOIN {$wpdb->prefix}term_taxonomy ON {$wpdb->prefix}term_relationships.term_taxonomy_id = {$wpdb->prefix}term_taxonomy.term_taxonomy_id ";
