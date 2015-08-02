@@ -2,7 +2,7 @@
 Contributors: pantsonhead
 Tags: widget, plugin, sidebar, activity, graph, google, chart, sparkline, posts, comments
 Requires at least: 2.8
-Tested up to: 3.2.1
+Tested up to: 4.2.3
 Stable tag: trunk
 
 Display a customizable sparkline graph of post and/or comment activity.
@@ -54,6 +54,11 @@ An example of how to implement parameters is as follows:
 Caching is not available for the template tag implementation.
 
 == Changelog ==
+
+= v0.6 2015-08-02 =
+
+* Fixed "Undefined index" error.
+* Tested up to: 4.2.3 
 
 = v0.5 2012-10-23 =
 

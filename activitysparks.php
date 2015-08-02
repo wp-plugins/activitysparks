@@ -4,11 +4,11 @@
 Plugin name: Activity Sparks
 Plugin URI: http://www.pantsonhead.com/wordpress/activitysparks/
 Description: A widget to display a customizable sparkline graph of post and/or comment activity.
-Version: 0.5
+Version: 0.6
 Author: Greg Jackson
-Author URI: http://www.pantsonhead.com
 
-Copyright 2012  Greg Jackson  (email : greg@pantsonhead.com)
+
+Copyright 2015  Greg Jackson  (email : greg@gregjxn.com)
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -175,6 +175,7 @@ class activitysparks extends WP_Widget {
 		if($maxval<4) $maxval=4;
 		$data_points = '';
 		for($i=$now_tick-$ticks;$i<=$now_tick;$i++){
+			if(!isset($data[$i])) { $data[$i] = 0; };
 			$value = $maxval ? intval(($data[$i]/$maxval)*100) : 0;
 			$data_points .= (!empty($data_points)) ?  ','.$value : $value;
 		}
@@ -182,8 +183,14 @@ class activitysparks extends WP_Widget {
 	}
 	
 	function update($new_instance, $old_instance) {
-	  $instance = $old_instance;
-	  $instance['title'] = strip_tags(stripslashes($new_instance['title']));
+		$instance = $old_instance;
+
+		// prevent PHP Notice: Undefined index: chart_category
+		if( !isset( $new_instance['chart_category'] ) ) {
+			$new_instance['chart_category'] = 0;
+		}
+
+		$instance['title'] = strip_tags(stripslashes($new_instance['title']));
 		$instance['dataset'] = $new_instance['dataset'];
 		$instance['width_px'] = intval($new_instance['width_px']);
 		$instance['height_px'] = intval($new_instance['height_px']);
@@ -196,13 +203,14 @@ class activitysparks extends WP_Widget {
 		$instance['cachetime'] = intval($new_instance['cachetime']);
 		$instance['url'] = ''; // flush the cache
 		$instance['chart_category'] = intval($new_instance['chart_category']);
+
 	  return $instance;
 	}
 	
 	function form($instance) {
 		
 	  $instance = wp_parse_args((array)$instance, array(
-			'title' => 'Recent Activity', 
+			'title' => __('Recent Activity','activitysparks'), 
 			'width_px' => 250, 
 			'height_px' => 50,
 			'period' => 7,
@@ -210,12 +218,15 @@ class activitysparks extends WP_Widget {
 			'chma' => 5,
 			'bkgrnd' => 'FFFFFF',
 			'posts_color' => '4D89F9',
-			'comments_color' => 'FF9900'
+			'comments_color' => 'FF9900',
+			'dataset' => 'posts',
+			'cachetime' => 0,
+			'chart_category' => 0
 			));
 		
-	  $title = htmlspecialchars($instance['title']);
+	  	$title = htmlspecialchars($instance['title']);
 		$dataset = $instance['dataset'];
-	  $width_px = intval($instance['width_px']);
+		$width_px = intval($instance['width_px']);
 		$height_px = intval($instance['height_px']);
 		$period = intval($instance['period']);
 		$ticks = intval($instance['ticks']);
@@ -226,90 +237,88 @@ class activitysparks extends WP_Widget {
 		$cachetime = intval($instance['cachetime']);
 		$chart_category = intval($instance['chart_category']);
 
-		${'dataset_'.$dataset} = 'SELECTED';
-		${'cachetime_'.$cachetime} = 'SELECTED';
 		${'period_'.$period} = 'SELECTED';
 		$chart_category_checked = $chart_category ? 'checked': '';
   
 		echo '
 		<style type="text/css">.color_swatch {width:12px;height:12px;}</style>
 		<p>
-			<label for="'.$this->get_field_name('title').'">Title: </label> 
+			<label for="'.$this->get_field_name('title').'">'.__('Title:','activitysparks').' </label> 
 			<input type="text" id="'.$this->get_field_id('title').'" name="'.$this->get_field_name('title').'" value="'.$title.'"/>
 			</p>
 			<p>
-				<label for="'.$this->get_field_name('dataset').'">Display Style: </label><br />
+				<label for="'.$this->get_field_name('dataset').'">'.__('Display Style:','activitysparks').' </label><br />
 				<select id="'.$this->get_field_id('dataset').'" name="'.$this->get_field_name('dataset').'">
-					<option value="posts" '.$dataset_posts.'>Posts</option>
-					<option value="comments" '.$dataset_comments.'>Comments</option>
-					<option value="both" '.$dataset_both.'>Posts + Comments</option>
-					<option value="legend" '.$dataset_legend.'>Posts + Comments with legend</option>
+					<option value="posts" '.selected( $dataset, 'posts', FALSE).'>'.__('Posts','activitysparks').'</option>
+					<option value="comments" '.selected( $dataset, 'comments', FALSE).'>'.__('Comments','activitysparks').'</option>
+					<option value="both" '.selected( $dataset, 'both', FALSE).'>'.__('Posts + Comments','activitysparks').'</option>
+					<option value="legend" '.selected( $dataset, 'legend', FALSE).'>'.__('Posts + Comments with legend','activitysparks').'</option>
 				</select>
 			</p>
 			<p>
 				<input id="'.$this->get_field_id('chart_category').'" name="'.$this->get_field_name('chart_category').'" type="checkbox" value="1" '.$chart_category_checked.'> 
-				<label for="'.$this->get_field_name('chart_category').'">Show activity per category page.</label>
+				<label for="'.$this->get_field_name('chart_category').'">'.__('Show activity per category page.','activitysparks').'</label>
 			</p>
 			<p>
-				<label for="'.$this->get_field_name('cachetime').'">Caching: </label> 
+				<label for="'.$this->get_field_name('cachetime').'">'.__('Caching:','activitysparks').' </label> 
 				<select id="'.$this->get_field_id('cachetime').'" name="'.$this->get_field_name('cachetime').'">
-					<option value="0" '.$cachetime_0.'>None</option>
-					<option value="300" '.$cachetime_300.'>Short (5 mins) </option>
-					<option value="3600" '.$cachetime_3600.'>Long (1 hour) </option>
+					<option value="0" '.selected( $cachetime, 0, FALSE).'>'.__('None','activitysparks').'</option>
+					<option value="300" '.selected( $cachetime, 300, FALSE).'>'.__('Short (5 mins)','activitysparks').' </option>
+					<option value="3600" '.selected( $cachetime, 3600, FALSE).'>'.__('Long (1 hour)','activitysparks').' </option>
 				</select>
 			</p>
 			<table cellpadding="0" cellspacing="0" width="100%">
 			<tr><td width="50%">
 				<p>
-				<label for="'.$this->get_field_name('period').'">Period: </label><br />
+				<label for="'.$this->get_field_name('period').'">'.__('Period:','activitysparks').' </label><br />
 				<select id="'.$this->get_field_id('period').'" name="'.$this->get_field_name('period').'">
-				<option value="1" '.$period_1.'>Day</option>
-				<option value="7" '.$period_7.'>Week</option>
-				<option value="14" '.$period_14.'>Fortnight</option>
-				<option  value="30" '.$period_30.'>Month</option>
+				<option value="1" '.selected( $period, 1, FALSE).'>'.__('Day','activitysparks').'</option>
+				<option value="7" '.selected( $period, 7, FALSE).'>'.__('Week','activitysparks').'</option>
+				<option value="14" '.selected( $period, 14, FALSE).'>'.__('Fortnight','activitysparks').'</option>
+				<option  value="30" '.selected( $period, 30, FALSE).'>'.__('Month','activitysparks').'</option>
 				</select>
 				</p>
 			</td><td>
 				<p>
-				<label for="'.$this->get_field_name('ticks').'">Ticks: </label><br />
+				<label for="'.$this->get_field_name('ticks').'">'.__('Ticks:','activitysparks').' </label><br />
 				<input type="text" id="'.$this->get_field_id('ticks').'" name="'.$this->get_field_name('ticks').'" value="'.$ticks.'" style="width:80px" />
 				</p>
 			</td></tr>
 			<tr><td colspan="2">
-			<span class="description">Change the Period to suit the frequency of your posts, and Ticks to limit how many periods to graph.<br>&nbsp;</span>
+			<span class="description">'.__('Change the Period to suit the frequency of your posts, and Ticks to limit how many periods to graph.','activitysparks').'<br>&nbsp;</span>
 			</td></tr>
 			<tr><td>
 				<p>
-				<label for="'.$this->get_field_name('width_px').'">Width (px): </label><br />
+				<label for="'.$this->get_field_name('width_px').'">'.__('Width (px):','activitysparks').' </label><br />
 				<input type="text" id="'.$this->get_field_id('width_px').'" name="'.$this->get_field_name('width_px').'" value="'.$width_px.'"/ style="width:80px" />
 				</p>
 			</td><td>
 				<p>
-				<label for="'.$this->get_field_name('height_px').'">Height (px): </label><br />
+				<label for="'.$this->get_field_name('height_px').'">'.__('Height (px):','activitysparks').' </label><br />
 				<input type="text" id="'.$this->get_field_id('height_px').'" name="'.$this->get_field_name('height_px').'" value="'.$height_px.'" style="width:80px" />
 				</p>
 			</td></tr>
 			<tr><td>
 				<p>
-				<label for="'.$this->get_field_name('posts_color').'">Posts: </label><br />
+				<label for="'.$this->get_field_name('posts_color').'">'.__('Posts:','activitysparks').' </label><br />
 				<input type="text" id="'.$this->get_field_id('posts_color').'" name="'.$this->get_field_name('posts_color').'" value="'.$posts_color.'" style="width:60px" />
 				<input id="swatch1" class="color_swatch" disabled="disabled" style="background:#'.$posts_color.'">
 				</p>
 			</td><td>
 				<p>
-				<label for="'.$this->get_field_name('comments_color').'">Comments: </label><br />
+				<label for="'.$this->get_field_name('comments_color').'">'.__('Comments:','activitysparks').' </label><br />
 				<input type="text" id="'.$this->get_field_id('comments_color').'" name="'.$this->get_field_name('comments_color').'" value="'.$comments_color.'" style="width:60px" />
 				<input id="swatch2" class="color_swatch" disabled="disabled" style="background:#'.$comments_color.'" alt="bob">
 				</p>
 			</td></tr>
 			</table>
 			<p>
-			<label for="'.$this->get_field_name('bkgrnd').'">Background: </label><br />
+			<label for="'.$this->get_field_name('bkgrnd').'">'.__('Background:','activitysparks').' </label><br />
 			<input type="text" id="'.$this->get_field_id('bkgrnd').'" name="'.$this->get_field_name('bkgrnd').'" value="'.$bkgrnd.'" style="width:60px" />
 			<input id="swatch3" class="color_swatch" disabled="disabled" style="background:#'.$bkgrnd.'"> e.g. FFFFAA or NONE
 			</p>
 			<p>
-			<label for="'.$this->get_field_name('chma').'">Graph Margin (px): </label> 
+			<label for="'.$this->get_field_name('chma').'">'.__('Graph Margin (px):','activitysparks').' </label> 
 			<input type="text" id="'.$this->get_field_id('chma').'" name="'.$this->get_field_name('chma').'" value="'.$chma.'" style="width:80px" />
 			</p>
 			';
