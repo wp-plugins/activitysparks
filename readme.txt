@@ -55,6 +55,11 @@ Caching is not available for the template tag implementation.
 
 == Changelog ==
 
+= v0.6.1 2015-08-18 =
+
+* Moved screenshot to assets folder
+* Added icon PNG
+
 = v0.6 2015-08-02 =
 
 * Fixed "Undefined index" error.

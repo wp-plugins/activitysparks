@@ -4,7 +4,7 @@
 Plugin name: Activity Sparks
 Plugin URI: http://www.pantsonhead.com/wordpress/activitysparks/
 Description: A widget to display a customizable sparkline graph of post and/or comment activity.
-Version: 0.6
+Version: 0.6.1
 Author: Greg Jackson
 
 
